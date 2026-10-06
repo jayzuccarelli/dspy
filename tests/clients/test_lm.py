@@ -443,6 +443,23 @@ def test_reasoning_model_requirements(model_name):
     assert lm.kwargs["max_completion_tokens"] is None
 
 
+def test_reasoning_model_requirements_on_copy():
+    with pytest.raises(dspy.LMConfigurationError):
+        dspy.LM("openai/gpt-4o", temperature=0.2).copy(model="openai/gpt-5")
+
+    lm = dspy.LM("openai/gpt-4o", max_tokens=16_000).copy(model="openai/gpt-5")
+    assert lm.kwargs["max_completion_tokens"] == 16_000
+    assert "max_tokens" not in lm.kwargs
+
+    lm = lm.copy(max_tokens=32_000)
+    assert lm.kwargs["max_completion_tokens"] == 32_000
+    assert "max_tokens" not in lm.kwargs
+
+    lm = lm.copy(model="openai/gpt-4o")
+    assert lm.kwargs["max_tokens"] == 32_000
+    assert "max_completion_tokens" not in lm.kwargs
+
+
 def test_gpt_5_chat_not_reasoning_model():
     """Test that gpt-5-chat is NOT treated as a reasoning model."""
     # Should NOT raise validation error - gpt-5-chat is not a reasoning model

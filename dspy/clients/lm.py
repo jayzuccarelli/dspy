@@ -466,6 +466,16 @@ class LM(BaseLM):
         _check_engines(spec, async_spec)
         _refuse_client_settings(spec, {**self.kwargs, **kwargs}, where="LM.copy")
         copied = super().copy(**kwargs)
+        if _is_openai_reasoning_model(self.model) or _is_openai_reasoning_model(copied.model):
+            # Re-run the constructor's token mapping and reasoning-model checks for the copy's model.
+            copied_kwargs = dict(copied.kwargs)
+            max_completion_tokens = copied_kwargs.pop("max_completion_tokens", None)
+            max_tokens = copied_kwargs.pop("max_tokens", None)
+            copied.kwargs = copied._get_initial_kwargs(
+                temperature=copied_kwargs.pop("temperature", None),
+                max_tokens=max_tokens if max_tokens is not None else max_completion_tokens,
+                **copied_kwargs,
+            )
         copied._engine_spec = spec
         copied._async_engine_spec = async_spec
         return copied
